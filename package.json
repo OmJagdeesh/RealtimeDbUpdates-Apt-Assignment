@@ -1,0 +1,27 @@
+{
+  "name": "realtime-db-updates-apt-assignment",
+  "version": "1.0.0",
+  "description": "Backend foundation for realtime PostgreSQL update propagation without client polling.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "db:schema": "node scripts/apply-schema.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "postgresql",
+    "socket.io",
+    "realtime"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.21.0",
+    "socket.io": "^4.8.3"
+  }
+}
