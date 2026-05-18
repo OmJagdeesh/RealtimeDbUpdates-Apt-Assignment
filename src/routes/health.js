@@ -8,6 +8,7 @@ healthRouter.get('/', (_request, response) => {
     status: 'ok',
     service: 'realtime-db-updates-api',
     environment: env.nodeEnv,
-    uptime: process.uptime()
+    uptimeSeconds: Math.round(process.uptime()),
+    timestamp: new Date().toISOString()
   });
 });

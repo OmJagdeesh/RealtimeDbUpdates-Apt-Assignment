@@ -15,6 +15,10 @@ const parseOrderId = (id) => {
 };
 
 const validateOrderPayload = (payload) => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new ValidationError('Request body must be a JSON object');
+  }
+
   const details = {};
 
   for (const field of ORDER_FIELDS) {

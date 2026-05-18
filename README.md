@@ -1,8 +1,12 @@
 # Realtime DB Updates - Apt Assignment
 
-Backend engineering assignment for building a realtime database update propagation system with Node.js, PostgreSQL, and WebSockets.
+Backend engineering assignment for realtime database update propagation using Node.js, PostgreSQL, and WebSockets.
 
-The system notifies connected clients when the `orders` table changes, without client polling.
+The service pushes `orders` table changes to connected clients without polling. PostgreSQL emits change events through triggers and `LISTEN/NOTIFY`; the Node.js backend receives those events and broadcasts them to browser clients through Socket.IO.
+
+## Assignment Objective
+
+Build a working backend service where clients automatically receive database updates when rows are inserted, updated, or deleted. The solution should demonstrate correctness, efficiency, clean backend design, and clear reasoning about realtime systems.
 
 ## Tech Stack
 
@@ -14,7 +18,134 @@ The system notifies connected clients when the `orders` table changes, without c
 - dotenv
 - Plain HTML/CSS/JS dashboard
 
-## Setup
+## Architecture
+
+```mermaid
+flowchart LR
+  A[PostgreSQL orders table] --> B[Trigger function]
+  B --> C[pg_notify orders_changes]
+  C --> D[Node.js LISTEN listener]
+  D --> E[Socket.IO server]
+  E --> F[Connected browser clients]
+```
+
+Runtime flow:
+
+```text
+PostgreSQL Trigger
+-> pg_notify()
+-> Node.js LISTEN
+-> Socket.IO Broadcast
+-> Connected Clients
+```
+
+Project organization:
+
+- `src/config` loads and validates environment configuration.
+- `src/db` owns PostgreSQL connection pooling.
+- `src/controllers` translates HTTP requests into service calls.
+- `src/services` contains order business logic and persistence workflows.
+- `src/routes` defines HTTP routes.
+- `src/listeners` receives PostgreSQL notification events.
+- `src/sockets` initializes Socket.IO and broadcasts events.
+- `src/middleware` contains request logging, async handling, and error handling.
+- `src/utils` contains shared utilities.
+- `public` contains the realtime dashboard.
+- `sql` contains schema and trigger setup.
+- `scripts` contains local setup helpers.
+
+## Why LISTEN/NOTIFY
+
+PostgreSQL `LISTEN/NOTIFY` is a strong fit for this assignment because the database can emit an event only when data changes. That avoids repeatedly querying for state that may not have changed, keeps the backend event-driven, and reduces unnecessary database load compared with polling.
+
+The notification payload stays compact and contains the operation, changed order data, and timestamp. For larger systems, this pattern can evolve by publishing IDs only or handing off to a dedicated message broker.
+
+## Why WebSockets
+
+WebSockets give each client a persistent connection for server-initiated updates. That means the server can push changes immediately instead of waiting for the next client request. Socket.IO also provides reconnect behavior and browser-friendly client support.
+
+Polling was intentionally avoided because it creates repeated reads, adds latency between polling intervals, and scales poorly when many clients ask the database the same question over and over.
+
+## API Documentation
+
+Base URL:
+
+```text
+http://localhost:3000
+```
+
+### Health
+
+```http
+GET /health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "service": "realtime-db-updates-api",
+  "environment": "development",
+  "uptimeSeconds": 42,
+  "timestamp": "2026-05-18T18:10:00.000Z"
+}
+```
+
+### Orders
+
+```http
+GET /api/orders
+POST /api/orders
+PUT /api/orders/:id
+DELETE /api/orders/:id
+```
+
+Order request body:
+
+```json
+{
+  "customer_name": "Ada Lovelace",
+  "product_name": "Execution Engine",
+  "status": "pending"
+}
+```
+
+Allowed statuses:
+
+- `pending`
+- `shipped`
+- `delivered`
+
+Validation errors return `400`, missing orders return `404`, and unexpected failures return `500`.
+
+## Realtime Events
+
+Socket.IO event name:
+
+```text
+orders:change
+```
+
+Example websocket payload:
+
+```json
+{
+  "operation": "INSERT",
+  "order": {
+    "id": 1,
+    "customer_name": "Ada Lovelace",
+    "product_name": "Execution Engine",
+    "status": "pending",
+    "updated_at": "2026-05-18T22:46:32.5491+05:30"
+  },
+  "timestamp": "2026-05-18T22:46:32.5491+05:30"
+}
+```
+
+`operation` can be `INSERT`, `UPDATE`, or `DELETE`.
+
+## Setup Instructions
 
 Install dependencies:
 
@@ -36,16 +167,28 @@ Apply the database schema:
 npm.cmd run db:schema
 ```
 
-Apply database triggers for realtime notifications:
+Apply database triggers:
 
 ```powershell
 npm.cmd run db:triggers
 ```
 
-Start the development server:
+Seed sample data:
+
+```powershell
+npm.cmd run seed
+```
+
+Start the application:
 
 ```powershell
 npm.cmd run dev
+```
+
+Open the dashboard:
+
+```text
+http://localhost:3000
 ```
 
 Check service health:
@@ -54,79 +197,59 @@ Check service health:
 Invoke-RestMethod http://localhost:3000/health
 ```
 
-## Architecture
-
-This service is organized around small, focused modules:
-
-- `src/config` loads and validates environment configuration.
-- `src/db` owns PostgreSQL connection setup.
-- `src/controllers` translates HTTP requests into service calls.
-- `src/routes` contains HTTP routes.
-- `src/services` contains order business logic and persistence workflows.
-- `src/listeners` contains the PostgreSQL notification listener.
-- `src/sockets` contains Socket.IO setup and broadcast helpers.
-- `src/utils` contains shared utilities such as logging.
-- `public` contains the realtime dashboard.
-- `sql` contains database schema and trigger setup.
-
-The current realtime flow is:
+## Folder Structure
 
 ```text
-PostgreSQL orders table change
--> orders_notify_change trigger
--> pg_notify('orders_changes', payload)
--> Node.js LISTEN orders_changes
--> Socket.IO orders:change broadcast
--> connected dashboard clients update instantly
+RealtimeDbUpdates-Apt-Assignment/
+├── logs/
+│   └── .gitkeep
+├── public/
+│   ├── app.js
+│   ├── index.html
+│   └── styles.css
+├── scripts/
+│   ├── apply-schema.js
+│   ├── apply-triggers.js
+│   └── seed.js
+├── sql/
+│   ├── schema.sql
+│   └── triggers.sql
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── db/
+│   ├── listeners/
+│   ├── middleware/
+│   ├── routes/
+│   ├── services/
+│   ├── sockets/
+│   └── utils/
+├── .env.example
+├── .gitignore
+├── package-lock.json
+├── package.json
+└── README.md
 ```
-
-PostgreSQL `LISTEN/NOTIFY` was chosen over polling because the database can emit events only when data changes. This reduces unnecessary repeated reads, lowers database load, and gives the backend an event-driven path for Socket.IO broadcasting.
-
-WebSockets are a better fit than polling here because each connected client holds one persistent connection and receives updates only when state changes. That avoids repeated client requests, stale polling intervals, and avoidable pressure on PostgreSQL during quiet periods.
-
-The dashboard uses Socket.IO reconnect handling and refreshes the orders list after reconnecting so clients can resync if they missed an event while offline.
-
-## API
-
-Orders endpoints:
-
-- `GET /api/orders`
-- `POST /api/orders`
-- `PUT /api/orders/:id`
-- `DELETE /api/orders/:id`
-
-Allowed order statuses:
-
-- `pending`
-- `shipped`
-- `delivered`
-
-## WebSocket Events
-
-The backend broadcasts order changes on the `orders:change` event.
-
-Example payload:
-
-```json
-{
-  "operation": "INSERT",
-  "order": {
-    "id": 1,
-    "customer_name": "Ada Lovelace",
-    "product_name": "Execution Engine",
-    "status": "pending",
-    "updated_at": "2026-05-18T22:46:32.5491+05:30"
-  },
-  "timestamp": "2026-05-18T22:46:32.5491+05:30"
-}
-```
-
-The server logs websocket client connections, disconnections, connection errors, and broadcast events.
-
-## Scalability Notes
-
-This implementation keeps the update path event-driven for the single-node assignment scope. For multiple Node.js instances, use a Socket.IO adapter such as Redis so broadcasts reach clients connected to any instance. PostgreSQL `LISTEN/NOTIFY` is efficient for lightweight event fanout, but high-throughput systems should consider an external message broker and keep notification payloads compact.
 
 ## Screenshots
 
-Dashboard screenshots can be added here after visual QA.
+Recommended screenshots for submission:
+
+- Dashboard loaded with sample orders and `Connected` websocket status.
+- Dashboard event feed after an order insert or update.
+- PostgreSQL notification logs showing `Received order database notification`.
+
+## Scalability Discussion
+
+This implementation is intentionally lean for the assignment scope. For a single Node.js instance, PostgreSQL `LISTEN/NOTIFY` plus Socket.IO gives a simple and efficient event-driven pipeline.
+
+For multiple Node.js instances, Socket.IO should use a shared adapter such as Redis so clients connected to different instances receive the same broadcasts. For very high event volume, a dedicated broker such as Kafka, NATS, or Redis Streams would provide stronger buffering, replay, and fanout controls. Notification payloads should also stay compact to avoid pushing large row data through PostgreSQL notifications.
+
+## Future Improvements
+
+- Add authentication and authorization for order APIs and websocket clients.
+- Add automated integration tests around trigger and websocket behavior.
+- Add pagination/filtering for the orders API.
+- Add optimistic UI controls for creating or editing orders from the dashboard.
+- Add production observability with structured log collection and metrics.
+- Add a Socket.IO adapter for horizontal backend scaling.

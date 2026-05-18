@@ -11,6 +11,12 @@ export const notFoundHandler = (request, response) => {
 
 export const errorHandler = (error, _request, response, _next) => {
   if (error instanceof AppError) {
+    logger.warn('Handled request error', {
+      error: error.message,
+      statusCode: error.statusCode,
+      details: error.details
+    });
+
     response.status(error.statusCode).json({
       error: {
         message: error.message,
