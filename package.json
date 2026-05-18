@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "db:schema": "node scripts/apply-schema.js"
+    "db:schema": "node scripts/apply-schema.js",
+    "db:triggers": "node scripts/apply-triggers.js"
   },
   "keywords": [
     "nodejs",

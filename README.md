@@ -35,6 +35,12 @@ Apply the database schema:
 npm.cmd run db:schema
 ```
 
+Apply database triggers for realtime notifications:
+
+```powershell
+npm.cmd run db:triggers
+```
+
 Start the development server:
 
 ```powershell
@@ -53,11 +59,39 @@ This service is organized around small, focused modules:
 
 - `src/config` loads and validates environment configuration.
 - `src/db` owns PostgreSQL connection setup.
+- `src/controllers` translates HTTP requests into service calls.
 - `src/routes` contains HTTP routes.
-- `src/services` will contain business logic.
-- `src/listeners` will contain database change listeners in a later commit.
+- `src/services` contains order business logic and persistence workflows.
+- `src/listeners` contains the PostgreSQL notification listener.
 - `src/sockets` will contain Socket.IO setup in a later commit.
 - `src/utils` contains shared utilities such as logging.
-- `sql` contains database schema setup.
+- `sql` contains database schema and trigger setup.
 
-Realtime database propagation, Socket.IO event handling, PostgreSQL `LISTEN/NOTIFY`, CRUD APIs, and a realtime client will be implemented in later commits.
+The current realtime flow is:
+
+```text
+PostgreSQL orders table change
+-> orders_notify_change trigger
+-> pg_notify('orders_changes', payload)
+-> Node.js LISTEN orders_changes
+-> structured log entry
+```
+
+PostgreSQL `LISTEN/NOTIFY` was chosen over polling because the database can emit events only when data changes. This reduces unnecessary repeated reads, lowers database load, and gives the backend an event-driven path for future Socket.IO broadcasting.
+
+Socket.IO event broadcasting and a realtime client will be implemented in later commits.
+
+## API
+
+Orders endpoints:
+
+- `GET /api/orders`
+- `POST /api/orders`
+- `PUT /api/orders/:id`
+- `DELETE /api/orders/:id`
+
+Allowed order statuses:
+
+- `pending`
+- `shipped`
+- `delivered`
