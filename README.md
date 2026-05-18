@@ -2,7 +2,7 @@
 
 Backend engineering assignment for building a realtime database update propagation system with Node.js, PostgreSQL, and WebSockets.
 
-The final system will notify connected clients when the `orders` table changes, without client polling. This first commit sets up only the backend foundation and infrastructure.
+The system notifies connected clients when the `orders` table changes, without client polling.
 
 ## Tech Stack
 
@@ -12,6 +12,7 @@ The final system will notify connected clients when the `orders` table changes, 
 - `pg`
 - Socket.IO
 - dotenv
+- Plain HTML/CSS/JS dashboard
 
 ## Setup
 
@@ -63,8 +64,9 @@ This service is organized around small, focused modules:
 - `src/routes` contains HTTP routes.
 - `src/services` contains order business logic and persistence workflows.
 - `src/listeners` contains the PostgreSQL notification listener.
-- `src/sockets` will contain Socket.IO setup in a later commit.
+- `src/sockets` contains Socket.IO setup and broadcast helpers.
 - `src/utils` contains shared utilities such as logging.
+- `public` contains the realtime dashboard.
 - `sql` contains database schema and trigger setup.
 
 The current realtime flow is:
@@ -74,12 +76,15 @@ PostgreSQL orders table change
 -> orders_notify_change trigger
 -> pg_notify('orders_changes', payload)
 -> Node.js LISTEN orders_changes
--> structured log entry
+-> Socket.IO orders:change broadcast
+-> connected dashboard clients update instantly
 ```
 
-PostgreSQL `LISTEN/NOTIFY` was chosen over polling because the database can emit events only when data changes. This reduces unnecessary repeated reads, lowers database load, and gives the backend an event-driven path for future Socket.IO broadcasting.
+PostgreSQL `LISTEN/NOTIFY` was chosen over polling because the database can emit events only when data changes. This reduces unnecessary repeated reads, lowers database load, and gives the backend an event-driven path for Socket.IO broadcasting.
 
-Socket.IO event broadcasting and a realtime client will be implemented in later commits.
+WebSockets are a better fit than polling here because each connected client holds one persistent connection and receives updates only when state changes. That avoids repeated client requests, stale polling intervals, and avoidable pressure on PostgreSQL during quiet periods.
+
+The dashboard uses Socket.IO reconnect handling and refreshes the orders list after reconnecting so clients can resync if they missed an event while offline.
 
 ## API
 
@@ -95,3 +100,33 @@ Allowed order statuses:
 - `pending`
 - `shipped`
 - `delivered`
+
+## WebSocket Events
+
+The backend broadcasts order changes on the `orders:change` event.
+
+Example payload:
+
+```json
+{
+  "operation": "INSERT",
+  "order": {
+    "id": 1,
+    "customer_name": "Ada Lovelace",
+    "product_name": "Execution Engine",
+    "status": "pending",
+    "updated_at": "2026-05-18T22:46:32.5491+05:30"
+  },
+  "timestamp": "2026-05-18T22:46:32.5491+05:30"
+}
+```
+
+The server logs websocket client connections, disconnections, connection errors, and broadcast events.
+
+## Scalability Notes
+
+This implementation keeps the update path event-driven for the single-node assignment scope. For multiple Node.js instances, use a Socket.IO adapter such as Redis so broadcasts reach clients connected to any instance. PostgreSQL `LISTEN/NOTIFY` is efficient for lightweight event fanout, but high-throughput systems should consider an external message broker and keep notification payloads compact.
+
+## Screenshots
+
+Dashboard screenshots can be added here after visual QA.

@@ -5,7 +5,7 @@ const ORDERS_CHANNEL = 'orders_changes';
 
 let listenerClient;
 
-export const startOrderChangeListener = async () => {
+export const startOrderChangeListener = async ({ onOrderChange } = {}) => {
   listenerClient = await pool.connect();
 
   listenerClient.on('notification', (message) => {
@@ -25,6 +25,10 @@ export const startOrderChangeListener = async () => {
       channel: message.channel,
       payload
     });
+
+    if (onOrderChange) {
+      onOrderChange(payload);
+    }
   });
 
   listenerClient.on('error', (error) => {

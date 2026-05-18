@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Realtime Orders Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232266e3'/%3E%3Cpath d='M9 17h14M9 11h14M9 23h9' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <h1>Realtime Orders</h1>
+          <p>Database changes streamed through PostgreSQL LISTEN/NOTIFY and Socket.IO.</p>
+        </div>
+        <div class="connection-card" aria-live="polite">
+          <span id="connection-dot" class="connection-dot connection-dot--offline"></span>
+          <span id="connection-status">Disconnected</span>
+        </div>
+      </header>
+
+      <section class="dashboard-grid">
+        <section class="panel orders-panel" aria-labelledby="orders-heading">
+          <div class="panel-header">
+            <div>
+              <h2 id="orders-heading">Orders</h2>
+              <p id="orders-count">0 active orders</p>
+            </div>
+            <button id="refresh-orders" type="button">Refresh</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Customer</th>
+                  <th>Product</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table-body">
+                <tr>
+                  <td colspan="5" class="empty-state">Loading orders...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside class="panel feed-panel" aria-labelledby="feed-heading">
+          <div class="panel-header">
+            <div>
+              <h2 id="feed-heading">Event Feed</h2>
+              <p>Live database notifications</p>
+            </div>
+          </div>
+          <ol id="event-feed" class="event-feed"></ol>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
