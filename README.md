@@ -233,8 +233,9 @@ RealtimeDbUpdates-Apt-Assignment/
 
 ## Video Demonstration
 
-<video src="./AptProjectDemo(OmJagdeesh).mp4" controls="controls" width="100%">
-</video>
+https://github.com/OmJagdeesh/RealtimeDbUpdates-Apt-Assignment/raw/main/AptProjectDemo(OmJagdeesh).mp4
+
+[View Video directly on GitHub](https://github.com/OmJagdeesh/RealtimeDbUpdates-Apt-Assignment/blob/main/AptProjectDemo(OmJagdeesh).mp4)
 
 ## Future Improvements
 
