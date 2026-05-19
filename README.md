@@ -4,9 +4,9 @@ Backend engineering assignment for realtime database update propagation using No
 
 The service pushes `orders` table changes to connected clients without polling. PostgreSQL emits change events through triggers and `LISTEN/NOTIFY`; the Node.js backend receives those events and broadcasts them to browser clients through Socket.IO.
 
-## Assignment Objective
+## Objective
 
-Build a working backend service where clients automatically receive database updates when rows are inserted, updated, or deleted. The solution should demonstrate correctness, efficiency, clean backend design, and clear reasoning about realtime systems.
+Build a working backend service where clients automatically receive database updates when rows are inserted, updated, or deleted. The architecture demonstrates correctness, efficiency, clean backend design, and clear reasoning about realtime systems.
 
 ## Tech Stack
 
@@ -231,19 +231,10 @@ RealtimeDbUpdates-Apt-Assignment/
 └── README.md
 ```
 
-## Screenshots
+## Video Demonstration
 
-Recommended screenshots for submission:
-
-- Dashboard loaded with sample orders and `Connected` websocket status.
-- Dashboard event feed after an order insert or update.
-- PostgreSQL notification logs showing `Received order database notification`.
-
-## Scalability Discussion
-
-This implementation is intentionally lean for the assignment scope. For a single Node.js instance, PostgreSQL `LISTEN/NOTIFY` plus Socket.IO gives a simple and efficient event-driven pipeline.
-
-For multiple Node.js instances, Socket.IO should use a shared adapter such as Redis so clients connected to different instances receive the same broadcasts. For very high event volume, a dedicated broker such as Kafka, NATS, or Redis Streams would provide stronger buffering, replay, and fanout controls. Notification payloads should also stay compact to avoid pushing large row data through PostgreSQL notifications.
+<video src="./AptProjectDemo(OmJagdeesh).mp4" controls="controls" width="100%">
+</video>
 
 ## Future Improvements
 
