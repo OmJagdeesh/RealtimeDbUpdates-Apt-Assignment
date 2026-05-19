@@ -11,9 +11,9 @@ if (!process.env.DATABASE_URL) {
 const { Pool } = pg;
 
 const sampleOrders = [
-  ['Ada Lovelace', 'Execution Engine', 'pending'],
-  ['Grace Hopper', 'Realtime Console', 'shipped'],
-  ['Katherine Johnson', 'Signal Board', 'delivered']
+  ['Aarav Sharma', 'Nifty Options Strategy', 'pending'],
+  ['Meera Iyer', 'Bank Nifty Signal Pack', 'shipped'],
+  ['Rohan Gupta', 'Intraday Risk Monitor', 'delivered']
 ];
 
 const pool = new Pool({
